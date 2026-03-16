@@ -255,3 +255,23 @@ async function loadHistoryItem(id) {
   }
 }
 
+async function login(email, password) {
+  const response = await fetch(`${API_BASE}/auth/login`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ email, password }), 
+});
+
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({}));
+    throw new Error(err.detail || 'Ошибка логина');
+  }
+
+  const data = await response.json();
+ 
+  const token = data.access_token;
+  localStorage.setItem('token', token);
+  return token;
+}
