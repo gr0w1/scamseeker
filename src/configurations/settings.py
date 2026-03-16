@@ -14,7 +14,7 @@ class Settings(BaseSettings):
     api_v1_prefix: str = "/v1"
 
     db_host: str = "localhost"
-    db_port: int = 5432
+    db_port: int = 5433
     db_name: str = "text_risk_db"
     db_username: str = "postgres"
     db_password: str = "postgres"
