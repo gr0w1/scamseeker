@@ -1,6 +1,9 @@
 from abc import ABC, abstractmethod
 from typing import Optional
 
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from src.services.history import HistoryService
 from src.services.model_inference import ModelInferenceService
 from src.services.model_explainability import ModelExplainabilityService
 from src.services.recommendations import build_recommendations
@@ -9,10 +12,14 @@ from src.services.scoring import compute_final_score, resolve_risk_level
 from src.schemas.analysis import AnalysisResult
 
 
-
 class BaseAnalysisService(ABC):
     @abstractmethod
-    async def analyze_text(self, text: str, user_id: Optional[int] = None) -> AnalysisResult:
+    async def analyze_text(
+        self,
+        text: str,
+        user_id: Optional[int] = None,
+        session: Optional[AsyncSession] = None,
+    ) -> AnalysisResult:
         raise NotImplementedError
 
 
@@ -23,7 +30,6 @@ class AnalysisService:
             pipeline=model_inference_service.model
         )
         self.model_version = model_version
-
 
     @staticmethod
     def normalize_text(text: str) -> str:
@@ -51,11 +57,14 @@ class AnalysisService:
 
         return f"Обнаружены подозрительные признаки: {joined}."
 
-    async def analyze_text(self, text: str) -> AnalysisResult:
+    async def analyze_text(
+        self,
+        text: str,
+        user_id: Optional[int] = None,
+        session: Optional[AsyncSession] = None,
+    ) -> AnalysisResult:
         normalized_text = self.normalize_text(text)
-
         ml_score = self.model_inference_service.predict_score(normalized_text)
-
         rule_result = analyze_rules(text)
         model_highlights = self.model_explainability_service.explain_words(text)
 
@@ -78,8 +87,7 @@ class AnalysisService:
             dominant_category=rule_result["dominant_category"],
             reason_codes=reason_codes,
         )
-
-        return AnalysisResult(
+        result = AnalysisResult(
             text=text,
             ml_score=ml_score,
             rule_score=rule_result["rule_score"],
@@ -94,3 +102,14 @@ class AnalysisService:
             category_breakdown=rule_result["category_breakdown"],
             model_version=self.model_version,
         )
+
+        if user_id is not None and session is not None:
+            history_service = HistoryService(session)
+            await history_service.save_check(
+                user_id=user_id,
+                source_text=text,
+                normalized_text=normalized_text,
+                result=result,
+            )
+
+        return result
