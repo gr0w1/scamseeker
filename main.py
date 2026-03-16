@@ -12,6 +12,9 @@ from src.routers import api_router
 from src.services.analysis import AnalysisService
 from src.services.model_inference import ModelInferenceService
 
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -42,9 +45,15 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-app.include_router(api_router)
-
+app.mount("/static", StaticFiles(directory="static"), name="static")
 
 @app.get("/", include_in_schema=False)
 async def root():
-    return {"message": "Text Risk Analyzer API is running"}
+    return FileResponse("static/index.html")
+
+app.include_router(api_router)
+
+
+#@app.get("/", include_in_schema=False)
+#async def root():
+#    return {"message": "Text Risk Analyzer API is running"}
