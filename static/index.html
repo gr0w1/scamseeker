@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ScamSeeker — Детектор фишинга и скама</title>
+  <style>
+    :root {
+      --bg-body: #020617;
+      --bg-card: rgba(15, 23, 42, 0.92);
+      --border-subtle: rgba(148, 163, 184, 0.22);
+      --accent: #22c55e;
+      --accent-soft: rgba(34, 197, 94, 0.18);
+      --accent-strong: #4ade80;
+      --danger: #ef4444;
+      --danger-soft: rgba(239, 68, 68, 0.16);
+      --warning: #f97316;
+      --text-main: #e5e7eb;
+      --text-muted: #9ca3af;
+      --text-weak: #6b7280;
+      --radius-lg: 16px;
+      --radius-xl: 24px;
+      --shadow-card: 0 16px 42px rgba(0, 0, 0, 0.55);
+      --shadow-soft: 0 20px 50px rgba(15, 23, 42, 0.7);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+      background: radial-gradient(circle at top left, #1d4ed8 0%, #020617 50%, #000 100%);
+      color: var(--text-main);
+      min-height: 100vh;
+      line-height: 1.5;
+    }
+
+    .container { max-width: 1100px; margin: 0 auto; padding: 0 20px; }
+
+    .app-header {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      backdrop-filter: blur(12px);
+      background: rgba(2, 6, 23, 0.85);
+      border-bottom: 1px solid var(--border-subtle);
+    }
+    .header-inner {
+      height: 64px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 1.35rem;
+      font-weight: 700;
+      color: #f9fafb;
+    }
+    .logo-pill {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 30% 20%, var(--accent), #166534);
+      box-shadow: 0 0 20px rgba(34,197,94,0.6);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.1rem;
+      color: #ecfdf5;
+    }
+
+    .auth-block { display: flex; gap: 12px; }
+    .btn {
+      padding: 8px 18px;
+      border-radius: 999px;
+      font-weight: 600;
+      font-size: 0.92rem;
+      cursor: pointer;
+      transition: all 0.18s;
+    }
+    .btn-ghost {
+      background: transparent;
+      border: 1px solid var(--border-subtle);
+      color: var(--text-muted);
+    }
+    .btn-ghost:hover { border-color: var(--accent); color: var(--accent-strong); }
+    .btn-outline {
+      background: rgba(15,23,42,0.8);
+      border: 1px solid var(--accent-soft);
+      color: var(--accent);
+    }
+    .btn-outline:hover { background: var(--accent-soft); }
+
+    .hero { padding: 60px 0 40px; }
+    .hero-grid {
+      display: grid;
+      grid-template-columns: 1.15fr 0.85fr;
+      gap: 40px;
+      align-items: center;
+    }
+    .hero h1 {
+      font-size: clamp(2.4rem, 5vw, 3.2rem);
+      margin-bottom: 16px;
+      line-height: 1.1;
+    }
+    .hero-subtitle {
+      color: var(--text-muted);
+      font-size: 1.05rem;
+      max-width: 520px;
+      margin-bottom: 24px;
+    }
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 14px;
+      border-radius: 999px;
+      background: rgba(15,23,42,0.9);
+      border: 1px solid var(--border-subtle);
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      margin-right: 12px;
+    }
+    .pill-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: var(--accent);
+      box-shadow: 0 0 12px var(--accent);
+    }
+    .btn-primary {
+      background: radial-gradient(circle at 20% 0, #bbf7d0, var(--accent) 60%, #16a34a);
+      color: #022c22;
+      border: none;
+      padding: 12px 28px;
+      font-size: 1rem;
+      font-weight: 700;
+      box-shadow: 0 12px 36px rgba(22,163,74,0.5);
+    }
+    .btn-primary:hover { filter: brightness(1.08); }
+
+    .section-card {
+      background: var(--bg-card);
+      border-radius: var(--radius-xl);
+      border: 1px solid var(--border-subtle);
+      box-shadow: var(--shadow-card);
+      padding: 28px;
+      margin-bottom: 32px;
+    }
+    h2 { font-size: 1.55rem; margin-bottom: 16px; }
+
+    textarea, input {
+      width: 100%;
+      padding: 12px 16px;
+      border-radius: 14px;
+      border: 1px solid rgba(55,65,81,0.6);
+      background: #020617;
+      color: var(--text-main);
+      font-size: 1rem;
+      resize: vertical;
+      min-height: 140px;
+    }
+    textarea:focus, input:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-soft);
+    }
+    .form-actions { margin-top: 16px; display: flex; gap: 16px; align-items: center; }
+
+    .result-summary {
+      background: rgba(34,197,94,0.08);
+      border: 1px solid rgba(74,222,128,0.3);
+      border-radius: var(--radius-lg);
+      padding: 16px;
+      margin-bottom: 20px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16px;
+      align-items: center;
+    }
+    .badge-risk {
+      padding: 6px 14px;
+      border-radius: 999px;
+      font-weight: 600;
+      font-size: 0.9rem;
+    }
+    .risk-low  { background: rgba(34,197,94,0.2);  color: #86efac; border: 1px solid #4ade80; }
+    .risk-medium { background: rgba(249,115,22,0.2); color: #fdba74; border: 1px solid #fb923c; }
+    .risk-high  { background: var(--danger-soft); color: var(--danger); border: 1px solid #f87171; }
+
+    .score-big {
+      font-size: 2.8rem;
+      font-weight: 800;
+      color: #fee2e2;
+    }
+
+    .highlights-container, .recommendations {
+      margin: 20px 0;
+      padding: 16px;
+      background: rgba(15,23,42,0.95);
+      border-radius: 14px;
+      border: 1px solid var(--border-subtle);
+    }
+
+    .highlight {
+      padding: 10px 14px;
+      margin: 8px 0;
+      border-radius: 10px;
+      background: rgba(248,113,113,0.12);
+      border-left: 4px solid var(--danger);
+    }
+    .highlight.medium { border-left-color: var(--warning); background: rgba(249,115,22,0.12); }
+
+    .modal {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.75);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+    .modal-content {
+      background: #020617;
+      border-radius: 20px;
+      padding: 32px;
+      width: 90%; max-width: 480px;
+      border: 1px solid var(--border-subtle);
+      box-shadow: 0 30px 70px rgba(0,0,0,0.8);
+    }
+    .close { float: right; font-size: 2rem; cursor: pointer; color: var(--text-muted); }
+
+    @media (max-width: 900px) {
+      .hero-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+  <header class="app-header">
+    <div class="container">
+      <div class="header-inner">
+        <div class="logo">
+          <div class="logo-pill">🛡️</div>
+          ScamSeeker
+        </div>
+        <div class="auth-block">
+          <button class="btn btn-ghost" id="loginBtn">Войти</button>
+          <button class="btn btn-outline" id="registerBtn">Регистрация</button>
+          <button class="btn btn-ghost" id="logoutBtn" style="display:none;">Выйти</button>
+          <span id="userInfo" style="display:none; margin-left:16px; color:var(--text-muted);"></span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="container">
+
+    <section class="hero">
+      <div class="hero-grid">
+        <div>
+          <div style="margin-bottom:16px;">
+            <span class="pill"><span class="pill-dot"></span>Детектор скама и фишинга</span>
+            <span class="pill">Мгновенный анализ</span>
+          </div>
+          <h1>Проверьте любое сообщение перед тем, как доверять</h1>
+          <p class="hero-subtitle">
+            Вставьте текст подозрительного письма, SMS или объявления — получите вердикт, подсветку опасных фраз и рекомендации.
+          </p>
+          <div style="margin:24px 0;">
+            <button class="btn-primary" onclick="document.getElementById('textInput').focus();">Начать проверку</button>
+          </div>
+        </div>
+        <div style="text-align:center;">
+        </div>
+      </div>
+    </section>
+
+    <section class="section-card">
+      <h2>Проверить сообщение</h2>
+      <textarea id="textInput" placeholder="Например: Срочно перейдите по ссылке https://sber-login.ru и подтвердите код из SMS..." rows="7"></textarea>
+      <div class="form-actions">
+        <button id="analyzeBtn" class="btn-primary">Проанализировать</button>
+      </div>
+    </section>
+
+    <section id="results" class="section-card" style="display:none;">
+      <h2>Результат анализа</h2>
+      <div class="result-summary">
+        <span id="riskLevel" class="badge-risk"></span>
+        <div class="score-big" id="finalScore">—</div>
+      </div>
+      <div class="explanation" id="shortExplanation" style="margin:16px 0; font-size:1.05rem;"></div>
+
+      <div class="highlights-container">
+        <h3>Подозрительные фрагменты</h3>
+        <div id="highlightsList"></div>
+      </div>
+
+      <div class="recommendations">
+        <h3>Рекомендации</h3>
+        <ul id="recommendationsList"></ul>
+      </div>
+    </section>
+
+    <section id="historySection" class="section-card" style="display:none;">
+      <h2>История проверок</h2>
+      <div id="historyList"></div>
+    </section>
+
+  </main>
+
+  <div id="authModal" class="modal">
+    <div class="modal-content">
+      <span class="close" id="closeModal">&times;</span>
+      <h2 id="modalTitle">Вход</h2>
+      <form id="authForm">
+        <div class="form-field">
+          <label for="email">Email</label>
+          <input type="email" id="email" required>
+        </div>
+        <div class="form-field">
+          <label for="password">Пароль</label>
+          <input type="password" id="password" minlength="8" required>
+        </div>
+        <div id="nameFields" style="display:none;">
+          <div class="form-field">
+            <label for="firstName">Имя</label>
+            <input type="text" id="firstName" required>
+          </div>
+          <div class="form-field">
+            <label for="lastName">Фамилия</label>
+            <input type="text" id="lastName" required>
+          </div>
+        </div>
+        <button type="submit" class="btn-primary" id="submitBtn" style="width:100%; margin-top:16px;">Войти</button>
+        <button type="button" id="switchMode" class="btn-ghost" style="width:100%; margin-top:12px; display:none;">Перейти к регистрации</button>
+      </form>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
