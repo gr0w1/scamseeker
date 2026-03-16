@@ -1,0 +1,32 @@
+# Виртуальное окружение
+venv/
+.venv/
+env/
+ENV/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Виртуалка
+bin/
+lib/
+include/
+site-packages/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# БД и данные
+*.db
+postgres_data/
+
+# Окружение
+.env
+
+# Docker
+.dockerignore
