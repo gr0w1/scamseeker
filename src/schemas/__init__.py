@@ -1,3 +1,4 @@
+from src.schemas.history import HistoryListItem, HistoryDetail
 from src.schemas.common import HealthResponse
 from src.schemas.analysis import (
     AnalyzeTextRequest,
@@ -34,5 +35,8 @@ __all__ = [
     "UserLogin",
     "Token",
     "TokenPayload",
+    "HistoryListItem",
+    "HistoryDetail",
+
 ]
 
