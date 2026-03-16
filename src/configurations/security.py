@@ -52,3 +52,27 @@ async def get_current_user(
         raise credentials_exception
 
     return user
+async def get_current_user_optional(
+    request: Request,
+    session: AsyncSession = Depends(get_async_session),
+) -> Optional[User]:
+    auth_header = request.headers.get("Authorization")
+    if not auth_header:
+        return None
+
+    scheme, _, token = auth_header.partition(" ")
+    if scheme.lower() != "bearer" or not token:
+        return None
+
+    try:
+        payload = jwt.decode(token, settings.jwt_secret_key, algorithms=[ALGORITHM])
+        token_data = TokenPayload(**payload)
+    except JWTError:
+        return None
+
+    if token_data.sub is None:
+        return None
+
+    repo = UserRepository(session)
+    user = await repo.get_by_id(int(token_data.sub))
+    return user
