@@ -13,16 +13,33 @@ async function initApp() {
 }
 
 function setupEventListeners() {
-  document.getElementById('loginBtn').onclick = () => showAuthModal(false);
-  document.getElementById('logoutBtn').onclick = logout;
-  document.getElementById('analyzeBtn').onclick = analyzeText;
-  document.getElementById('closeModal').onclick = hideAuthModal;
-  document.getElementById('authForm').onsubmit = handleAuth;
-  document.getElementById('switchMode').onclick = toggleAuthMode;
+  const loginBtn = document.getElementById('loginBtn');
+  if (loginBtn) loginBtn.onclick = () => showAuthModal(false);
   
-  document.getElementById('authModal').onclick = (e) => {
-    if (e.target === e.currentTarget) hideAuthModal();
-  };
+  const logoutBtn = document.getElementById('logoutBtn');
+  if (logoutBtn) logoutBtn.onclick = logout;
+  
+  const analyzeBtn = document.getElementById('analyzeBtn');
+  if (analyzeBtn) analyzeBtn.onclick = analyzeText;
+  
+  const closeModal = document.getElementById('closeModal');
+  if (closeModal) closeModal.onclick = hideAuthModal;
+  
+  const authForm = document.getElementById('authForm');
+  if (authForm) {
+    authForm.onsubmit = handleAuth;
+    console.log('✅ Форма авторизации подключена');
+  }
+  
+  const switchMode = document.getElementById('switchMode');
+  if (switchMode) switchMode.onclick = toggleAuthMode;
+  
+  const authModal = document.getElementById('authModal');
+  if (authModal) {
+    authModal.onclick = (e) => {
+      if (e.target === e.currentTarget) hideAuthModal();
+    };
+  }
 }
 
 async function checkAuth() {
@@ -39,12 +56,15 @@ async function checkAuth() {
     if (response.ok) {
       currentUser = await response.json();
       updateUIForUser();
+      console.log('✅ Авторизация проверена:', currentUser.email);
     } else {
+      console.log('❌ Токен недействителен');
       localStorage.removeItem('token');
       currentToken = null;
       updateUIForGuest();
     }
-  } catch {
+  } catch (error) {
+    console.error('Ошибка checkAuth:', error);
     localStorage.removeItem('token');
     currentToken = null;
     updateUIForGuest();
@@ -52,27 +72,47 @@ async function checkAuth() {
 }
 
 function updateUIForGuest() {
-  document.getElementById('loginBtn').style.display = 'inline-block';
-  document.getElementById('logoutBtn').style.display = 'none';
-  document.getElementById('userInfo').style.display = 'none';
-  document.getElementById('historySection').style.display = 'none';
+  const loginBtn = document.getElementById('loginBtn');
+  const logoutBtn = document.getElementById('logoutBtn');
+  const userInfo = document.getElementById('userInfo');
+  const historySection = document.getElementById('historySection');
+  
+  if (loginBtn) loginBtn.style.display = 'inline-block';
+  if (logoutBtn) logoutBtn.style.display = 'none';
+  if (userInfo) userInfo.style.display = 'none';
+  if (historySection) historySection.style.display = 'none';
 }
 
 function updateUIForUser() {
-  document.getElementById('loginBtn').style.display = 'none';
-  document.getElementById('logoutBtn').style.display = 'inline-block';
-  document.getElementById('userInfo').textContent = `${currentUser.first_name} ${currentUser.last_name}`;
-  document.getElementById('userInfo').style.display = 'inline-block';
-  document.getElementById('historySection').style.display = 'block';
+  const loginBtn = document.getElementById('loginBtn');
+  const logoutBtn = document.getElementById('logoutBtn');
+  const userInfo = document.getElementById('userInfo');
+  const historySection = document.getElementById('historySection');
+  
+  if (loginBtn) loginBtn.style.display = 'none';
+  if (logoutBtn) logoutBtn.style.display = 'inline-block';
+  if (userInfo) {
+    userInfo.textContent = `${currentUser.first_name || ''} ${currentUser.last_name || ''}`.trim() || currentUser.email;
+    userInfo.style.display = 'inline-block';
+  }
+  if (historySection) historySection.style.display = 'block';
 }
 
 function showAuthModal(register = false) {
   isRegisterMode = register;
-  document.getElementById('modalTitle').textContent = register ? 'Регистрация' : 'Вход';
-  document.getElementById('nameFields').style.display = register ? 'block' : 'none';
-  document.getElementById('switchMode').textContent = register ? 'У меня есть аккаунт' : 'Создать аккаунт';
-  document.getElementById('switchMode').style.display = 'block';
-  document.getElementById('submitBtn').textContent = register ? 'Зарегистрироваться' : 'Войти';
+  const modalTitle = document.getElementById('modalTitle');
+  const nameFields = document.getElementById('nameFields');
+  const switchMode = document.getElementById('switchMode');
+  const submitBtn = document.querySelector('#authForm button[type="submit"]');
+  
+  if (modalTitle) modalTitle.textContent = register ? 'Регистрация' : 'Вход';
+  if (nameFields) nameFields.style.display = register ? 'block' : 'none';
+  if (switchMode) {
+    switchMode.textContent = register ? 'У меня есть аккаунт' : 'Создать аккаунт';
+    switchMode.style.display = 'block';
+  }
+  if (submitBtn) submitBtn.textContent = register ? 'Зарегистрироваться' : 'Войти';
+  
   document.getElementById('authModal').style.display = 'flex';
 }
 
@@ -87,47 +127,73 @@ function toggleAuthMode() {
 
 async function handleAuth(e) {
   e.preventDefault();
+  console.log('🔄 handleAuth вызвана, режим:', isRegisterMode ? 'регистрация' : 'логин');
   
-  const email = document.getElementById('email').value;
+  const email = document.getElementById('email').value.trim();
   const password = document.getElementById('password').value;
+  
+  if (!email || !password) {
+    alert('⚠️ Заполните email и пароль');
+    return;
+  }
   
   try {
     if (isRegisterMode) {
-      const firstName = document.getElementById('firstName').value;
-      const lastName = document.getElementById('lastName').value;
+      const firstName = document.getElementById('firstName').value.trim();
+      const lastName = document.getElementById('lastName').value.trim();
       
+      if (!firstName || !lastName) {
+        alert('⚠️ Заполните имя и фамилию');
+        return;
+      }
+      
+      console.log('🔄 Регистрация:', { email, firstName, lastName });
       const response = await fetch(`${API_BASE}/auth/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, first_name: firstName, last_name: lastName, password })
+        body: JSON.stringify({ 
+          email, 
+          first_name: firstName, 
+          last_name: lastName, 
+          password 
+        })
       });
       
-      if (!response.ok) throw new Error('Registration failed');
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.detail || 'Ошибка регистрации');
+      }
       
-      alert('✅ Регистрация успешна! Теперь войдите в аккаунт.');
+      alert('✅ Регистрация успешна! Теперь войдите.');
       showAuthModal(false);
     } else {
+      console.log('🔄 Логин:', email);
       const response = await fetch(`${API_BASE}/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password })
       });
       
+      console.log('📡 Ответ сервера:', response.status);
+      
       if (response.ok) {
         const data = await response.json();
+        console.log('✅ Токен получен:', data.access_token ? 'ДА' : 'НЕТ');
+        
         currentToken = data.access_token;
         localStorage.setItem('token', currentToken);
         await checkAuth();
         hideAuthModal();
-        loadHistory();
+        if (currentUser) loadHistory();
       } else {
-        const error = await response.json();
+        const error = await response.json().catch(() => ({}));
+        console.error('Ошибка логина:', error);
         alert(`❌ ${error.detail || 'Неверный email или пароль'}`);
       }
     }
   } catch (error) {
-    console.error('Auth error:', error);
-    alert('❌ Ошибка авторизации. Попробуйте позже.');
+    console.error('🚨 Ошибка авторизации:', error);
+    alert('❌ Ошибка: ' + error.message);
   }
 }
 
@@ -136,8 +202,10 @@ function logout() {
   currentToken = null;
   currentUser = null;
   updateUIForGuest();
-  document.getElementById('historyList').innerHTML = '<p style="text-align: center; color: #6b7280;">История пуста</p>';
-  document.getElementById('results').style.display = 'none';
+  const historyList = document.getElementById('historyList');
+  if (historyList) historyList.innerHTML = '<p style="text-align: center; color: #6b7280;">История пуста</p>';
+  const results = document.getElementById('results');
+  if (results) results.style.display = 'none';
 }
 
 async function analyzeText() {
@@ -152,12 +220,14 @@ async function analyzeText() {
   analyzeBtn.disabled = true;
   
   try {
+    const headers = { 
+      'Content-Type': 'application/json',
+      ...(currentToken && { 'Authorization': `Bearer ${currentToken}` })
+    };
+    
     const response = await fetch(`${API_BASE}/analysis/check`, {
       method: 'POST',
-      headers: { 
-        'Content-Type': 'application/json',
-        ...(currentToken && { 'Authorization': `Bearer ${currentToken}` })
-      },
+      headers,
       body: JSON.stringify({ text })
     });
     
@@ -170,9 +240,9 @@ async function analyzeText() {
     }
   } catch (error) {
     console.error('Analysis error:', error);
-    alert('❌ Ошибка соединения с сервером. Убедитесь, что бэкенд запущен.');
+    alert('❌ Ошибка соединения. Бэкенд запущен?');
   } finally {
-    analyzeBtn.textContent = '🚀 Проверить';
+    analyzeBtn.textContent = 'Проанализировать';
     analyzeBtn.disabled = false;
   }
 }
@@ -180,19 +250,18 @@ async function analyzeText() {
 function showResults(result) {
   const riskLevel = document.getElementById('riskLevel');
   const riskClass = `risk-${result.risk_level}`;
-  riskLevel.textContent = result.risk_level.toUpperCase();
-  riskLevel.className = `risk-badge ${riskClass}`;
+  riskLevel.textContent = result.risk_level?.toUpperCase() || '—';
+  riskLevel.className = `badge-risk ${riskClass}`;
   
   document.getElementById('finalScore').textContent = (result.final_score * 100).toFixed(1) + '%';
-  
-  document.getElementById('shortExplanation').textContent = result.short_explanation;
+  document.getElementById('shortExplanation').textContent = result.short_explanation || '—';
   
   const highlightsList = document.getElementById('highlightsList');
-  if (result.highlights && result.highlights.length) {
+  if (result.highlights?.length) {
     highlightsList.innerHTML = result.highlights.map(h => 
       `<div class="highlight ${h.severity}">
         <strong>"${h.text}"</strong><br>
-        <small>${h.label} • Оценка: ${h.score.toFixed(2)} • ${h.reason_code}</small>
+        <small>${h.label} (${h.score?.toFixed(2)}) ${h.reason_code}</small>
       </div>`
     ).join('');
   } else {
@@ -200,14 +269,14 @@ function showResults(result) {
   }
   
   const recList = document.getElementById('recommendationsList');
-  recList.innerHTML = result.recommendations.map(rec => `<li>${rec}</li>`).join('');
+  recList.innerHTML = (result.recommendations || []).map(rec => `<li>${rec}</li>`).join('');
   
   document.getElementById('results').style.display = 'block';
   document.getElementById('results').scrollIntoView({ behavior: 'smooth' });
 }
 
 async function loadHistory() {
-  if (!currentToken || !currentUser) return;
+  if (!currentToken) return;
   
   try {
     const response = await fetch(`${API_BASE}/history`, {
@@ -218,23 +287,21 @@ async function loadHistory() {
       const history = await response.json();
       const historyList = document.getElementById('historyList');
       
-      if (history.length === 0) {
+      if (!history.length) {
         historyList.innerHTML = '<p style="text-align: center; color: #6b7280;">История пуста</p>';
       } else {
         historyList.innerHTML = history.map(item => `
-          <div class="history-item ${item.risk_level}" onclick="loadHistoryItem(${item.id})">
-            <div style="font-weight: 600; margin-bottom: 4px;">${item.short_explanation}</div>
-            <div style="color: #6b7280; font-size: 14px;">
-              ${(item.final_score * 100).toFixed(1)}% • 
-              ${new Date(item.created_at).toLocaleString('ru-RU')}
+          <div class="history-item ${item.risk_level}" onclick="loadHistoryItem(${item.id})" style="padding:16px; border-radius:8px; background:rgba(15,23,42,0.5); margin:4px 0; cursor:pointer;">
+            <div style="font-weight:600;">${item.short_explanation}</div>
+            <div style="color:#9ca3af; font-size:0.9rem;">
+              ${(item.final_score * 100).toFixed(1)}% • ${new Date(item.created_at).toLocaleString('ru-RU')}
             </div>
           </div>
         `).join('');
       }
     }
   } catch (error) {
-    console.error('History load error:', error);
-    document.getElementById('historyList').innerHTML = '<p style="color: #ef4444;">Ошибка загрузки истории</p>';
+    console.error('History error:', error);
   }
 }
 
@@ -250,28 +317,6 @@ async function loadHistoryItem(id) {
       showResults(result);
     }
   } catch (error) {
-    console.error('History item error:', error);
-    alert('❌ Ошибка загрузки элемента истории');
+    alert('Ошибка загрузки истории');
   }
-}
-
-async function login(email, password) {
-  const response = await fetch(`${API_BASE}/auth/login`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({ email, password }), 
-});
-
-  if (!response.ok) {
-    const err = await response.json().catch(() => ({}));
-    throw new Error(err.detail || 'Ошибка логина');
-  }
-
-  const data = await response.json();
- 
-  const token = data.access_token;
-  localStorage.setItem('token', token);
-  return token;
 }
