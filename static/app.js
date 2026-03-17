@@ -2,7 +2,7 @@ let currentToken = localStorage.getItem('token') || null;
 let currentUser = null;
 let isRegisterMode = false;
 
-const API_BASE = 'http://localhost:8000/api/v1';
+const API_BASE = '/api/v1';
 
 document.addEventListener('DOMContentLoaded', initApp);
 
@@ -50,7 +50,7 @@ async function checkAuth() {
   
   try {
     const response = await fetch(`${API_BASE}/auth/me`, {
-      headers: { 'Authorization': `Bearer ${currentToken}` }
+      headers: { 'Authorization': Bearer ${currentToken} }
     });
     
     if (response.ok) {
@@ -92,7 +92,7 @@ function updateUIForUser() {
   if (loginBtn) loginBtn.style.display = 'none';
   if (logoutBtn) logoutBtn.style.display = 'inline-block';
   if (userInfo) {
-    userInfo.textContent = `${currentUser.first_name || ''} ${currentUser.last_name || ''}`.trim() || currentUser.email;
+    userInfo.textContent = ${currentUser.first_name || ''} ${currentUser.last_name || ''}.trim() || currentUser.email;
     userInfo.style.display = 'inline-block';
   }
   if (historySection) historySection.style.display = 'block';
@@ -100,19 +100,35 @@ function updateUIForUser() {
 
 function showAuthModal(register = false) {
   isRegisterMode = register;
+
   const modalTitle = document.getElementById('modalTitle');
   const nameFields = document.getElementById('nameFields');
   const switchMode = document.getElementById('switchMode');
   const submitBtn = document.querySelector('#authForm button[type="submit"]');
-  
+  const firstName = document.getElementById('firstName');
+  const lastName = document.getElementById('lastName');
+
   if (modalTitle) modalTitle.textContent = register ? 'Регистрация' : 'Вход';
   if (nameFields) nameFields.style.display = register ? 'block' : 'none';
+
   if (switchMode) {
     switchMode.textContent = register ? 'У меня есть аккаунт' : 'Создать аккаунт';
     switchMode.style.display = 'block';
   }
+
   if (submitBtn) submitBtn.textContent = register ? 'Зарегистрироваться' : 'Войти';
-  
+
+  if (firstName) {
+    firstName.disabled = !register;
+    firstName.required = register;
+    if (!register) firstName.value = '';
+  }
+  if (lastName) {
+      lastName.disabled = !register;
+      lastName.required = register;
+      if (!register) lastName.value = '';
+  }
+
   document.getElementById('authModal').style.display = 'flex';
 }
 
@@ -222,7 +238,7 @@ async function analyzeText() {
   try {
     const headers = { 
       'Content-Type': 'application/json',
-      ...(currentToken && { 'Authorization': `Bearer ${currentToken}` })
+      ...(currentToken && { 'Authorization': Bearer ${currentToken} })
     };
     
     const response = await fetch(`${API_BASE}/analysis/check`, {
@@ -249,9 +265,9 @@ async function analyzeText() {
 
 function showResults(result) {
   const riskLevel = document.getElementById('riskLevel');
-  const riskClass = `risk-${result.risk_level}`;
+  const riskClass = risk-${result.risk_level};
   riskLevel.textContent = result.risk_level?.toUpperCase() || '—';
-  riskLevel.className = `badge-risk ${riskClass}`;
+  riskLevel.className = badge-risk ${riskClass};
   
   document.getElementById('finalScore').textContent = (result.final_score * 100).toFixed(1) + '%';
   document.getElementById('shortExplanation').textContent = result.short_explanation || '—';
@@ -279,8 +295,8 @@ async function loadHistory() {
   if (!currentToken) return;
   
   try {
-    const response = await fetch(`${API_BASE}/history`, {
-      headers: { 'Authorization': `Bearer ${currentToken}` }
+    const response = await fetch(`${API_BASE}/history/ `, {
+      headers: { 'Authorization': Bearer ${currentToken} }
     });
     
     if (response.ok) {
@@ -308,7 +324,7 @@ async function loadHistory() {
 async function loadHistoryItem(id) {
   try {
     const response = await fetch(`${API_BASE}/history/${id}`, {
-      headers: { 'Authorization': `Bearer ${currentToken}` }
+      headers: { 'Authorization': Bearer ${currentToken} }
     });
     
     if (response.ok) {
