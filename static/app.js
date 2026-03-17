@@ -28,7 +28,6 @@ function setupEventListeners() {
   const authForm = document.getElementById('authForm');
   if (authForm) {
     authForm.onsubmit = handleAuth;
-    console.log('✅ Форма авторизации подключена');
   }
   
   const switchMode = document.getElementById('switchMode');
@@ -56,9 +55,7 @@ async function checkAuth() {
     if (response.ok) {
       currentUser = await response.json();
       updateUIForUser();
-      console.log('✅ Авторизация проверена:', currentUser.email);
     } else {
-      console.log('❌ Токен недействителен');
       localStorage.removeItem('token');
       currentToken = null;
       updateUIForGuest();
@@ -143,7 +140,6 @@ function toggleAuthMode() {
 
 async function handleAuth(e) {
   e.preventDefault();
-  console.log('🔄 handleAuth вызвана, режим:', isRegisterMode ? 'регистрация' : 'логин');
   
   const email = document.getElementById('email').value.trim();
   const password = document.getElementById('password').value;
@@ -163,7 +159,6 @@ async function handleAuth(e) {
         return;
       }
       
-      console.log('🔄 Регистрация:', { email, firstName, lastName });
       const response = await fetch(`${API_BASE}/auth/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -183,18 +178,15 @@ async function handleAuth(e) {
       alert('✅ Регистрация успешна! Теперь войдите.');
       showAuthModal(false);
     } else {
-      console.log('🔄 Логин:', email);
       const response = await fetch(`${API_BASE}/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password })
       });
       
-      console.log('📡 Ответ сервера:', response.status);
       
       if (response.ok) {
         const data = await response.json();
-        console.log('✅ Токен получен:', data.access_token ? 'ДА' : 'НЕТ');
         
         currentToken = data.access_token;
         localStorage.setItem('token', currentToken);
@@ -203,12 +195,10 @@ async function handleAuth(e) {
         if (currentUser) loadHistory();
       } else {
         const error = await response.json().catch(() => ({}));
-        console.error('Ошибка логина:', error);
         alert(`❌ ${error.detail || 'Неверный email или пароль'}`);
       }
     }
   } catch (error) {
-    console.error('🚨 Ошибка авторизации:', error);
     alert('❌ Ошибка: ' + error.message);
   }
 }
